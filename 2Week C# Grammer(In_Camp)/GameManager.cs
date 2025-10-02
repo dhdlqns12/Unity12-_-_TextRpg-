@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace GameManager
@@ -50,17 +52,23 @@ namespace GameManager
 
         public static void GameSave(Player player, List<Item> _playerInventory, List<Item> _equipItem, int _slot)
         {
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All), // 한글 포함 모든 유니코드 출력,
+                WriteIndented = true  //WriteIndented(false)는 한줄로 압축,파일 크기 작음,사람이 읽기 어려움,네트워크 전송 또는 대용량 데이터에 유효
+            };                                //WriteIndented(true)는  줄바꿈과 들여쓰기,파일크기 큼,사람이 읽기 쉬움,디버깅 편함,세이브파일,개발,디버깅중에는 유효
+
             SaveData data = new SaveData(player, _playerInventory, _equipItem);
-            string json_Serialize = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }); //WriteIndented(false)는 한줄로 압축,파일 크기 작음,사람이 읽기 어려움,네트워크 전송 또는 대용량 데이터에 유효
-                                                            //Serialize는 data를 Json으로 변환                                          //WriteIndented(true)는  줄바꿈과 들여쓰기,파일크기 큼,사람이 읽기 쉬움,디버깅 편함,세이브파일,개발,디버깅중에는 유효
-            File.WriteAllText(SavePath(_slot), json_Serialize,new UTF8Encoding(true));  //Json으로 저장할 떄 한글로 표시 안되고 U0228처럼 유니코드로 저장되 한글로 인코딩해 저장하기 위해 new   UTF8Enconding(true)사용
+            string json_Serialize = JsonSerializer.Serialize(data, options);
+                                                            //Serialize는 data를 Json으로 변환                           
+            File.WriteAllText(SavePath(_slot), json_Serialize);  
         }
 
         public static SaveData GameLoad(int _slot)
         {
             string path = SavePath(_slot);
 
-            string json_Deserialize = File.ReadAllText(path,Encoding.UTF8);             //읽을 때 한글 깨지는 걸 방지하기 위해 Encoding.UTF8사용
+            string json_Deserialize = File.ReadAllText(path);  
             SaveData data = JsonSerializer.Deserialize<SaveData>(json_Deserialize);
 
             return data;
